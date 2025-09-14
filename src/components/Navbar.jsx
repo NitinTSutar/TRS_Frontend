@@ -2,6 +2,8 @@ import React, { useEffect } from "react";
 import useThemeStore from "../store/themeStore";
 import useUserStore from "../store/userStore";
 import MasterNavOptions from "./MasterNavOptions";
+import { Link } from "react-router-dom";
+import Signout from "./Signout";
 
 const Navbar = () => {
   const { theme, toggleTheme } = useThemeStore();
@@ -17,19 +19,22 @@ const Navbar = () => {
   return (
     <div className="navbar bg-base-100 shadow-sm">
       <div className="flex-1">
-        <a className="btn btn-ghost text-lg">
-          {user.role === "masterAdmin" && "TECHNOS ASSOCIATES"}
-          {!user.role === "masterAdmin" && user.companyName}
-        </a>
+        <Link to="/" className="btn btn-ghost text-lg">
+          {user
+            ? user.role === "masterAdmin"
+              ? "TECHNOS ASSOCIATES"
+              : user.companyName
+            : "TECHNOS ASSOCIATIES"}
+        </Link>
       </div>
       <div className="flex-none">
-        {user.role === "masterAdmin" && <MasterNavOptions />}
+        {user?.role === "masterAdmin" && <MasterNavOptions />}
         <label className="toggle text-base-content cursor-pointer">
           <input
             type="checkbox"
             className="theme-controller"
             onChange={toggleTheme}
-            checked={theme === "lofi"}
+            checked={theme === "light"}
           />
 
           <svg
@@ -72,6 +77,29 @@ const Navbar = () => {
             </g>
           </svg>
         </label>
+        {user && (
+          <div className="dropdown dropdown-end ml-4">
+            <label
+              tabIndex={0}
+              className="btn btn-outline flex items-center gap-2"
+            >
+              <span>{user.name.split(" ")[0]}</span>
+            </label>
+            <ul
+              tabIndex={0}
+              className="mt-3 gap-2 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-200 rounded-box w-52"
+            >
+              <li>
+                <Link to="/settings" className="justify-between">
+                  Profile Settings
+                </Link>
+              </li>
+              <li>
+                <Signout />
+              </li>
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );

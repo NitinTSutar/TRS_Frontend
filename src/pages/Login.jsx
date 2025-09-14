@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import useUserStore from "../store/userStore";
@@ -9,8 +9,14 @@ const Login = ({ master }) => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
 
-  const { setUser } = useUserStore();
+  const { user, setUser } = useUserStore();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
 
   const { mutate, isPending } = useMutation({
     mutationFn: async () => {
@@ -22,8 +28,7 @@ const Login = ({ master }) => {
     },
     onSuccess: (data) => {
       setUser(data);
-      console.log("Successily");
-      navigate("/dashboard");
+      navigate("/");
     },
     onError: (err) => {
       console.log("Login error:", err);
