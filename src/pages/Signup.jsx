@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { signupUser } from "../utils/api";
@@ -8,6 +8,13 @@ import { toast } from "react-hot-toast";
 const Signup = () => {
   const navigate = useNavigate();
   const setUser = useUserStore((state) => state.setUser);
+  const user = useUserStore((state) => state.user);
+
+  useEffect(() => {
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -25,7 +32,7 @@ const Signup = () => {
   const { mutate: signup, isPending } = useMutation({
     mutationFn: signupUser,
     onSuccess: (data) => {
-      setUser(data.user);
+      setUser(data.user); // This now correctly logs the user in
       toast.success("Signup successful!");
       navigate("/");
     },

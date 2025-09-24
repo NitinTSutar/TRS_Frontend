@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { updateCompanyDetails } from "../utils/api";
+import { updateCompanyDetails } from "../../utils/api";
 
 const EditCompanyModal = ({ companyDetails, onClose }) => {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     companyName: "",
-    subscriptionDaysToAdd: "",
     adminName: "",
+    adminEmail: "",
     adminPassword: "",
     adminPhoneNumber: "",
     adminAge: "",
@@ -21,10 +21,10 @@ const EditCompanyModal = ({ companyDetails, onClose }) => {
       setFormData({
         companyName: companyDetails.companyName || "",
         adminName: adminUser?.name || "",
+        adminEmail: adminUser?.email || "",
         adminPhoneNumber: adminUser?.phoneNumber || "",
         adminAge: adminUser?.age || "",
         adminGender: adminUser?.gender || "male",
-        subscriptionDaysToAdd: "", // Always starts empty
         adminPassword: "", // Always starts empty for security
       });
     }
@@ -92,17 +92,6 @@ const EditCompanyModal = ({ companyDetails, onClose }) => {
                 className="input input-bordered w-full"
               />
             </div>
-            <div>
-              <label className="label">Add Subscription Days</label>
-              <input
-                type="number"
-                name="subscriptionDaysToAdd"
-                value={formData.subscriptionDaysToAdd}
-                onChange={handleChange}
-                className="input input-bordered w-full"
-                placeholder="e.g., 30"
-              />
-            </div>
 
             {/* Admin Fields */}
             <div className="divider md:col-span-2">Admin Details</div>
@@ -112,6 +101,16 @@ const EditCompanyModal = ({ companyDetails, onClose }) => {
                 type="text"
                 name="adminName"
                 value={formData.adminName}
+                onChange={handleChange}
+                className="input input-bordered w-full"
+              />
+            </div>
+            <div>
+              <label className="label">Admin Email</label>
+              <input
+                type="email"
+                name="adminEmail"
+                value={formData.adminEmail}
                 onChange={handleChange}
                 className="input input-bordered w-full"
               />

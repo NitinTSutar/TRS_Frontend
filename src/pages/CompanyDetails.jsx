@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { useParams, Navigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { format, subMonths } from "date-fns";
 import { getCompanyDetails } from "../utils/api";
 import useUserStore from "../store/userStore";
-import EditCompanyModal from "../components/EditCompanyModal";
+import EditCompanyModal from "../components/masterComponents/EditCompanyModal";
 
 const DetailCard = ({ title, value }) => (
   <div>
@@ -54,6 +54,11 @@ const CompanyDetails = () => {
     );
   }
 
+  const now = new Date();
+  const currentMonthName = format(now, "MMMM");
+  const lastMonthName = format(subMonths(now, 1), "MMMM");
+  const twoMonthsAgoName = format(subMonths(now, 2), "MMMM");
+
   return (
     <div className="flex-1 p-4 sm:p-6 lg:p-8 space-y-8">
       <div className="flex justify-between items-start">
@@ -79,41 +84,32 @@ const CompanyDetails = () => {
             title="Created At"
             value={format(new Date(details?.createdAt || Date.now()), "PPP")}
           />
-          <DetailCard
-            title="Subscription Expiry"
-            value={format(
-              new Date(details?.subscriptionExpiry || Date.now()),
-              "PPP"
-            )}
-          />
           <DetailCard title="Total Users" value={details?.users?.length} />
         </div>
       </div>
 
-      {/* Users Table */}
-      <div>
-        <h2 className="text-2xl font-bold mb-4">Users</h2>
-        <div className="overflow-x-auto bg-base-100 rounded-lg shadow">
-          <table className="table w-full">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Employee ID</th>
-              </tr>
-            </thead>
-            <tbody>
-              {details?.users?.map((u) => (
-                <tr key={u.userId} className="hover">
-                  <td>{u.name}</td>
-                  <td>{u.email}</td>
-                  <td className="capitalize">{u.role}</td>
-                  <td>{u.employeeId}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Request Statistics Card */}
+      <div className="card bg-base-100 shadow-xl">
+        <div className="card-body">
+          <h2 className="card-title">Request Statistics</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
+            <DetailCard
+              title={`${currentMonthName} Requests`}
+              value={details?.requestStats?.currentMonthRequests || 0}
+            />
+            <DetailCard
+              title={`${lastMonthName} Requests`}
+              value={details?.requestStats?.lastMonthRequests || 0}
+            />
+            <DetailCard
+              title={`${twoMonthsAgoName} Requests`}
+              value={details?.requestStats?.twoMonthsAgoRequests || 0}
+            />
+            <DetailCard
+              title="Total Requests"
+              value={details?.requestStats?.totalRequests || 0}
+            />
+          </div>
         </div>
       </div>
 

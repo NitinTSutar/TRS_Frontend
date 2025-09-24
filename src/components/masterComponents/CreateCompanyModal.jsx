@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
-import { createCompany } from "../utils/api";
-import { validateEmail, getPasswordStrengthError } from "../utils/validation";
+import { createCompany } from "../../utils/api";
+import {
+  validateEmail,
+  getPasswordStrengthError,
+} from "../../utils/validation";
 
 const CreateCompanyModal = ({ onClose }) => {
   const queryClient = useQueryClient();
@@ -15,7 +18,6 @@ const CreateCompanyModal = ({ onClose }) => {
     phoneNumber: "",
     age: "",
     gender: "male",
-    subscriptionDays: 30,
   });
   const [errors, setErrors] = useState({});
 
@@ -45,8 +47,6 @@ const CreateCompanyModal = ({ onClose }) => {
 
     if (!formData.companyName.trim())
       newErrors.companyName = "Company name is required.";
-    if (!formData.subscriptionDays || formData.subscriptionDays <= 0)
-      newErrors.subscriptionDays = "Subscription must be a positive number.";
     if (!formData.name.trim()) newErrors.name = "Admin name is required.";
     if (!formData.employeeId.trim())
       newErrors.employeeId = "Employee ID is required.";
@@ -94,24 +94,6 @@ const CreateCompanyModal = ({ onClose }) => {
               />
               {errors.companyName && (
                 <p className="text-error text-xs mt-1">{errors.companyName}</p>
-              )}
-            </div>
-            <div>
-              <label className="label">Initial Subscription (Days)</label>
-              <input
-                type="number"
-                name="subscriptionDays"
-                value={formData.subscriptionDays}
-                onChange={handleChange}
-                className={`input input-bordered w-full ${
-                  errors.subscriptionDays ? "input-error" : ""
-                }`}
-                required
-              />
-              {errors.subscriptionDays && (
-                <p className="text-error text-xs mt-1">
-                  {errors.subscriptionDays}
-                </p>
               )}
             </div>
 

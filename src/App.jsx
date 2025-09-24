@@ -13,7 +13,7 @@ function App() {
   }, [theme]);
 
   return (
-    <div className="flex h-dvh flex-col justify-between ">
+    <div className="flex h-dvh flex-col justify-between p-2">
       <Navbar />
       <Outlet />
       <Footer />

@@ -93,6 +93,9 @@ const Settings = () => {
               {profile?.companyName && (
                 <ProfileDetail label="Company" value={profile.companyName} />
               )}
+              {profile?.companyId && (
+                <ProfileDetail label="Company ID" value={profile.companyId} />
+              )}
               <ProfileDetail
                 label="Member Since"
                 value={format(

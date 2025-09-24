@@ -30,6 +30,8 @@ export const logoutUser = async () => {
   return data;
 };
 
+// ... (Master api functions)
+
 export const getMasterDashboardData = async () => {
   const { data } = await api.get("/master/dashboard");
   return data;
@@ -46,7 +48,10 @@ export const getCompanyDetails = async (companyId) => {
 };
 
 export const updateCompanyDetails = async ({ companyId, updateData }) => {
-  const { data } = await api.patch(`/master/companies/${companyId}`, updateData);
+  const { data } = await api.patch(
+    `/master/companies/${companyId}`,
+    updateData
+  );
   return data;
 };
 
@@ -58,5 +63,92 @@ export const createCompany = async (companyData) => {
 export const updateProfile = async (updateData, isMaster = false) => {
   const endpoint = isMaster ? "/master/edit-profile" : "/auth/profile";
   const { data } = await api.patch(endpoint, updateData);
+  return data;
+};
+
+// ... (Admin api functions)
+
+export const getAdminDashboardData = async () => {
+  const { data } = await api.get("/admin/dashboard");
+  return data;
+};
+
+export const getCompanyUsers = async () => {
+  const { data } = await api.get("/admin/users");
+  return data;
+};
+
+export const updateUserByAdmin = async ({ userId, updateData }) => {
+  const { data } = await api.patch(`/admin/users/${userId}`, updateData);
+  return data;
+};
+
+export const getAdminTravelRequests = async () => {
+  const { data } = await api.get("/admin/travel-requests");
+  return data;
+};
+
+// ... (Manager api functions)
+
+export const getManagerDashboardData = async () => {
+  const { data } = await api.get("/manager/dashboard");
+  return data;
+};
+
+export const getManagerTravelRequests = async () => {
+  const { data } = await api.get("/manager/travel-requests");
+  return data;
+};
+
+export const getManagerRequestDetails = async (requestId) => {
+  const { data } = await api.get(`/manager/travel-requests/${requestId}`);
+  return data;
+};
+
+export const getManagerTeam = async () => {
+  const { data } = await api.get("/manager/team");
+  return data;
+};
+
+export const approveRequestByManager = async (requestId) => {
+  const { data } = await api.patch(
+    `/manager/travel-requests/${requestId}/approve`
+  );
+  return data;
+};
+
+export const rejectRequestByManager = async ({
+  requestId,
+  rejectionReason,
+}) => {
+  const { data } = await api.patch(
+    `/manager/travel-requests/${requestId}/reject`,
+    { rejectionReason }
+  );
+  return data;
+};
+
+// ... (Employee api functions)
+
+export const getEmployeeTravelRequests = async () => {
+  const { data } = await api.get("/employee/travel-requests");
+  return data;
+};
+
+export const createTravelRequest = async (requestData) => {
+  const { data } = await api.post("/employee/travel-request", requestData);
+  return data;
+};
+
+export const selectTravelOption = async ({ requestId, selectedOptionId }) => {
+  const { data } = await api.patch(
+    `/employee/travel-requests/${requestId}/select-option`,
+    { selectedOptionId }
+  );
+  return data;
+};
+
+export const uploadEmployeeDocuments = async ({ requestId, formData }) => {
+  const { data } = await api.post(`/employee/travel-requests/${requestId}/upload-documents`, formData);
   return data;
 };
