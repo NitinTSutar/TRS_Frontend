@@ -1,9 +1,12 @@
 import React, { useEffect } from "react";
 import useThemeStore from "../store/themeStore";
 import useUserStore from "../store/userStore";
-import MasterNavOptions from "./MasterNavOptions";
 import { Link } from "react-router-dom";
 import Signout from "./Signout";
+import MasterNavOptions from "./masterComponents/MasterNavOptions";
+import AdminNavOptions from "./adminComponents/AdminNavOptions";
+import ManagerNavOptions from "./managerComponents/ManagerNavOptions";
+import EmployeeNavOptions from "./employeeComponents/EmployeeNavOptions";
 
 const Navbar = () => {
   const { theme, toggleTheme } = useThemeStore();
@@ -17,7 +20,7 @@ const Navbar = () => {
   }, [theme]);
 
   return (
-    <div className="navbar bg-base-100 shadow-sm">
+    <div className="navbar bg-base-200 shadow-sm">
       <div className="flex-1">
         <Link to="/" className="btn btn-ghost text-lg">
           {user
@@ -29,6 +32,9 @@ const Navbar = () => {
       </div>
       <div className="flex-none">
         {user?.role === "masterAdmin" && <MasterNavOptions />}
+        {user?.role === "admin" && <AdminNavOptions />}
+        {user?.role === "manager" && <ManagerNavOptions />}
+        {user?.role === "employee" && <EmployeeNavOptions />}
         <label className="toggle text-base-content cursor-pointer">
           <input
             type="checkbox"

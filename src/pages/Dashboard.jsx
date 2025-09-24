@@ -1,7 +1,10 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
 import useUserStore from "../store/userStore";
-import MasterAdminDashboard from "../components/MasterAdminDashboard";
+import MasterAdminDashboard from "../components/masterComponents/MasterAdminDashboard";
+import AdminDashboard from "../components/adminComponents/AdminDashboard";
+import EmployeeDashboard from "../components/employeeComponents/EmployeeDashboard";
+import ManagerDashboard from "../components/managerComponents/ManagerDashboard";
 
 const Dashboard = () => {
   const { user } = useUserStore();
@@ -14,11 +17,11 @@ const Dashboard = () => {
     case "masterAdmin":
       return <MasterAdminDashboard />;
     case "admin":
-      return <div>Admin Dashboard for {user.name}</div>; // Placeholder
+      return <AdminDashboard />;
     case "manager":
-      return <div>Manager Dashboard for {user.name}</div>; // Placeholder
+      return <ManagerDashboard />;
     case "employee":
-      return <div>Employee Dashboard for {user.name}</div>; // Placeholder
+      return <EmployeeDashboard />;
     default:
       return <div>Welcome, {user.name}. Your role is not recognized.</div>;
   }

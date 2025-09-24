@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Navigate, useNavigate } from "react-router-dom";
-import { format } from "date-fns";
+import { format, subMonths } from "date-fns";
 import { getCompanies } from "../utils/api";
 import useUserStore from "../store/userStore";
-import CreateCompanyModal from "../components/CreateCompanyModal";
+import CreateCompanyModal from "../components/masterComponents/CreateCompanyModal";
 
 const Companies = () => {
   const { user } = useUserStore();
@@ -48,6 +48,11 @@ const Companies = () => {
     );
   }
 
+  const now = new Date();
+  const currentMonthName = format(now, "MMMM");
+  const lastMonthName = format(subMonths(now, 1), "MMMM");
+  const twoMonthsAgoName = format(subMonths(now, 2), "MMMM");
+
   return (
     <div className="flex-1 p-4 sm:p-6 lg:p-8">
       <div className="flex justify-between items-center mb-6">
@@ -65,9 +70,10 @@ const Companies = () => {
             <tr>
               <th>#</th>
               <th>Company Name</th>
-              <th>Company ID</th>
-              <th>Subscription Expiry</th>
-              <th>Created At</th>
+              <th className="text-center">{currentMonthName} Requests</th>
+              <th className="text-center">{lastMonthName} Requests</th>
+              <th className="text-center">{twoMonthsAgoName} Requests</th>
+              <th className="text-center">Total Requests</th>
             </tr>
           </thead>
           <tbody>
@@ -79,9 +85,12 @@ const Companies = () => {
               >
                 <th>{index + 1}</th>
                 <td>{company.companyName}</td>
-                <td>{company.companyId}</td>
-                <td>{format(new Date(company.subscriptionExpiry), "PPP")}</td>
-                <td>{format(new Date(company.createdAt), "PPP")}</td>
+                <td className="text-center">{company.currentMonthRequests}</td>
+                <td className="text-center">{company.lastMonthRequests}</td>
+                <td className="text-center">{company.twoMonthsAgoRequests}</td>
+                <td className="text-center font-bold">
+                  {company.totalRequests}
+                </td>
               </tr>
             ))}
           </tbody>
