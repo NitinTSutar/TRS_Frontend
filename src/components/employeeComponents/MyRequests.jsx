@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, Navigate } from "react-router-dom";
-import { format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { toast } from "react-hot-toast";
 import { getEmployeeTravelRequests, selectTravelOption } from "../../utils/api";
 import useUserStore from "../../store/userStore";
@@ -15,7 +15,7 @@ const MyRequests = () => {
   const [activeTab, setActiveTab] = useState(
     location.state?.initialTab || "all"
   );
-  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [selectedRequestId, setSelectedRequestId] = useState(null);
 
   useEffect(() => {
     if (location.state?.initialTab) {
@@ -37,8 +37,8 @@ const MyRequests = () => {
     mutationFn: selectTravelOption,
     onSuccess: () => {
       toast.success("Option selected! Request sent for manager approval.");
-      queryClient.invalidateQueries({ queryKey: ["employeeRequests"] });
-      setSelectedRequest(null);
+      queryClient.invalidateQueries({ queryKey: ["employeeRequests"] }); // Invalidate to refetch updated request
+      setSelectedRequestId(null);
     },
     onError: (err) =>
       toast.error(err?.response?.data?.message || "Failed to select option."),
@@ -100,9 +100,8 @@ const MyRequests = () => {
           <thead>
             <tr>
               <th>Journey Type</th>
-              <th>Travel Date</th>
               <th>Status</th>
-              <th>Submitted On</th>
+              <th>Updated On</th>
               <th></th>
             </tr>
           </thead>
@@ -111,26 +110,17 @@ const MyRequests = () => {
               <tr key={req._id} className="hover">
                 <td>{req.journeyType}</td>
                 <td>
-                  {req.travelDate
-                    ? format(new Date(req.travelDate), "PPP")
-                    : "N/A"}
+                  <span className=" capitalize">{req.status}</span>{" "}
                 </td>
                 <td>
-                  <span
-                    className={`badge badge-sm capitalize ${
-                      req.status === "optionsSent"
-                        ? "badge-warning"
-                        : "badge-ghost"
-                    }`}
-                  >
-                    {req.status}
-                  </span>
+                  {formatDistanceToNow(new Date(req.updatedAt), {
+                    addSuffix: true,
+                  })}
                 </td>
-                <td>{format(new Date(req.createdAt), "PPP")}</td>
                 <td>
                   <button
                     className="btn btn-xs btn-outline"
-                    onClick={() => setSelectedRequest(req)}
+                    onClick={() => setSelectedRequestId(req._id)}
                   >
                     View Details
                   </button>
@@ -148,17 +138,10 @@ const MyRequests = () => {
         </table>
       </div>
 
-      {selectedRequest && (
+      {selectedRequestId && (
         <EmployeeRequestDetailsModal
-          request={selectedRequest}
-          onClose={() => setSelectedRequest(null)}
-          onSelectOption={(optionId) =>
-            selectOptionMutate({
-              requestId: selectedRequest._id,
-              selectedOptionId: optionId,
-            })
-          }
-          isSelecting={isSelecting}
+          requestId={selectedRequestId}
+          onClose={() => setSelectedRequestId(null)}
         />
       )}
     </div>

@@ -83,9 +83,107 @@ export const updateUserByAdmin = async ({ userId, updateData }) => {
   return data;
 };
 
+export const getPassengerDetails = async (employeeIds) => {
+  const { data } = await api.post("/admin/users/details", { employeeIds });
+  return data;
+};
+
 export const getAdminTravelRequests = async () => {
   const { data } = await api.get("/admin/travel-requests");
   return data;
+};
+
+export const getAdminRequestDetails = async (requestId) => {
+  const { data } = await api.get(`/admin/travel-requests/${requestId}`);
+  return data;
+};
+
+export const addTravelOptions = async ({
+  requestId,
+  flightOptions,
+  hotelOptions,
+  cabOptions,
+}) => {
+  try {
+    const { data } = await api.patch(
+      `/admin/travel-requests/${requestId}/options`,
+      {
+        flightOptions,
+        hotelOptions,
+        cabOptions,
+      }
+    );
+    return data;
+  } catch (error) {
+    // Log the error for debugging
+    console.error("API Error:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const bookTravelRequest = async ({
+  requestId,
+  bookingData,
+  flightFiles,
+  hotelFiles,
+}) => {
+  const { flightBookings, hotelBookings, remarks } = bookingData;
+
+  // Step 1: Upload all flight documents
+  const uploadedFlightBookings = await Promise.all(
+    (flightBookings || []).map(async (booking, index) => {
+      if (flightFiles[index]) {
+        const formData = new FormData();
+        formData.append("documents", flightFiles[index]);
+        const res = await api.post(
+          `/admin/travel-requests/${requestId}/upload-documents`,
+          formData,
+          {
+            headers: { "Content-Type": "multipart/form-data" },
+          }
+        );
+        return { ...booking, ticketUrl: res.data.documentUrls[0] };
+      }
+      return booking;
+    })
+  );
+
+  // Step 2: Upload all hotel documents
+  const uploadedHotelBookings = await Promise.all(
+    (hotelBookings || []).map(async (booking, index) => {
+      if (hotelFiles[index]) {
+        const formData = new FormData();
+        formData.append("documents", hotelFiles[index]);
+        const res = await api.post(
+          `/admin/travel-requests/${requestId}/upload-documents`,
+          formData,
+          {
+            headers: { "Content-Type": "multipart/form-data" },
+          }
+        );
+        return { ...booking, confirmationUrl: res.data.documentUrls[0] };
+      }
+      return booking;
+    })
+  );
+
+  // Step 3: Submit the booking details with all URLs
+  const finalBookingData = {
+    remarks,
+    flightBookings: uploadedFlightBookings,
+    hotelBookings: uploadedHotelBookings,
+  };
+
+  const { data } = await api.patch(
+    `/admin/travel-requests/${requestId}/book`,
+    finalBookingData
+  );
+  return data;
+};
+
+export const getEmployeeRequestDetails = async (requestId) => {
+  const response = await api.get(`/employee/travel-requests/${requestId}`);
+  return response.data;
 };
 
 // ... (Manager api functions)
@@ -140,15 +238,25 @@ export const createTravelRequest = async (requestData) => {
   return data;
 };
 
-export const selectTravelOption = async ({ requestId, selectedOptionId }) => {
+export const selectTravelOption = async ({
+  requestId,
+  selectedFlightOptionIds,
+  selectedHotelOptionIds,
+}) => {
   const { data } = await api.patch(
     `/employee/travel-requests/${requestId}/select-option`,
-    { selectedOptionId }
+    { selectedFlightOptionIds, selectedHotelOptionIds }
   );
   return data;
 };
 
 export const uploadEmployeeDocuments = async ({ requestId, formData }) => {
-  const { data } = await api.post(`/employee/travel-requests/${requestId}/upload-documents`, formData);
+  const { data } = await api.post(
+    `/employee/travel-requests/${requestId}/upload-documents`,
+    formData,
+    {
+      headers: { "Content-Type": "multipart/form-data" },
+    }
+  );
   return data;
 };
