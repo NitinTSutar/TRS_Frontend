@@ -13,7 +13,9 @@ const CreateRequest = () => {
   const [formData, setFormData] = useState({
     journeyType: "oneway",
     noOfPax: 1,
-    passengers: [{ employeeId: user?.employeeId || "", remake: "Self" }],
+    passengers: [
+      { employeeId: user?.employeeId || "", remake: "Self", documents: [] },
+    ],
     flightDetails: [
       {
         fromCity: "",
@@ -31,7 +33,6 @@ const CreateRequest = () => {
     cabDetails: [],
     remarks: "",
   });
-  const [files, setFiles] = useState([]);
 
   // Generate time slots for dropdowns
   const timeSlots = ["Any"];
@@ -43,15 +44,17 @@ const CreateRequest = () => {
 
   const seatPreferences = ["Any", "Window", "Aisle", "Middle"];
 
-  // Generate guest count for dropdown
-  const guestOptions = Array.from({ length: 10 }, (_, i) => i + 1);
-
   const { mutate: createMutate, isPending: isCreating } = useMutation({
     mutationFn: createTravelRequest,
     onSuccess: async (data) => {
-      if (files.length > 0) {
+      // Consolidate all files from all passengers
+      const allFiles = formData.passengers.flatMap((p) => p.documents);
+
+      if (allFiles.length > 0) {
         const docFormData = new FormData();
-        files.forEach((file) => docFormData.append("documents", file));
+        allFiles.forEach((file) => {
+          docFormData.append("documents", file);
+        });
         await uploadDocsMutate({ requestId: data._id, formData: docFormData });
       } else {
         toast.success("Travel request created successfully!");
@@ -80,8 +83,8 @@ const CreateRequest = () => {
     const count = parseInt(e.target.value, 10);
     const newPassengers = Array.from({ length: count }, (_, i) =>
       i === 0
-        ? { employeeId: user?.employeeId || "", remake: "Self" }
-        : { employeeId: "", remake: "" }
+        ? { employeeId: user?.employeeId || "", remake: "Self", documents: [] }
+        : { employeeId: "", remake: "", documents: [] }
     );
     setFormData((prev) => ({
       ...prev,
@@ -93,6 +96,13 @@ const CreateRequest = () => {
   const handlePassengerIdChange = (index, value) => {
     const newPassengers = [...formData.passengers];
     newPassengers[index].employeeId = value;
+    setFormData((prev) => ({ ...prev, passengers: newPassengers }));
+  };
+
+  const handlePassengerFileChange = (index, files) => {
+    const newPassengers = [...formData.passengers];
+    // Directly assign the FileList converted to an array
+    newPassengers[index].documents = Array.from(files);
     setFormData((prev) => ({ ...prev, passengers: newPassengers }));
   };
 
@@ -160,7 +170,8 @@ const CreateRequest = () => {
       hotelDetails: [
         ...prev.hotelDetails,
         {
-          city: "",
+          hotelName: "",
+          location: "",
           checkInDate: "",
           checkOutDate: "",
           guests: 1,
@@ -192,6 +203,7 @@ const CreateRequest = () => {
           dropLocation: "",
           pickupDate: "",
           pickupTime: "",
+          remarks: "",
         },
       ],
     }));
@@ -203,34 +215,32 @@ const CreateRequest = () => {
     setFormData((prev) => ({ ...prev, cabDetails: newCabDetails }));
   };
 
-  const handleFileChange = (e) => {
-    setFiles(Array.from(e.target.files));
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Helper to format dates safely
+    // Helper to format dates safely for the backend
     const formatDate = (dateString) => {
-      return dateString ? format(new Date(dateString), "dd/MM/yyyy") : "";
+      if (!dateString) return null; // Send null if no date string
+      const date = new Date(dateString);
+      return isNaN(date.getTime()) ? null : format(date, "dd/MM/yyyy");
     };
 
     // Format all dates to dd/MM/yyyy for the backend
     const formattedFlightDetails = formData.flightDetails.map((flight) => ({
       ...flight,
-      departureDate: formatDate(flight.departureDate),
-      returnDate: formatDate(flight.returnDate),
+      departureDate: formatDate(flight.departureDate), // Corrected call
+      returnDate: formatDate(flight.returnDate), // Corrected call
     }));
 
     const formattedHotelDetails = formData.hotelDetails.map((hotel) => ({
       ...hotel,
-      checkInDate: formatDate(hotel.checkInDate),
+      checkInDate: formatDate(hotel.checkInDate), // Corrected call
       checkOutDate: formatDate(hotel.checkOutDate),
     }));
 
     const formattedCabDetails = formData.cabDetails.map((cab) => ({
       ...cab,
-      pickupDate: formatDate(cab.pickupDate),
+      pickupDate: formatDate(cab.pickupDate), // Corrected call
     }));
 
     const finalData = {
@@ -239,9 +249,7 @@ const CreateRequest = () => {
       hotelDetails: formattedHotelDetails,
       cabDetails: formattedCabDetails,
       // Use the formatted date for the main travelDate field
-      travelDate: formattedFlightDetails[0]?.departureDate
-        ? formattedFlightDetails[0].departureDate
-        : "",
+      travelDate: formatDate(formData.flightDetails[0]?.departureDate), // Corrected call
       // Consolidate visa details into the root field for the backend
       visaDetails: formData.flightDetails
         .filter((f) => f.visaRequired && f.visaCountry)
@@ -329,25 +337,41 @@ const CreateRequest = () => {
                 </div>
                 <div className="divider">Passenger Details</div>
                 {formData.passengers.map((pax, index) => (
-                  <div key={index} className="form-control w-full">
-                    {" "}
-                    {/* Added w-full */}
-                    <label className="label block mb-2">
-                      {" "}
-                      {/* Added block and margin */}
-                      <span className="label-text font-medium">
-                        Passenger {index + 1} Employee ID
-                      </span>
-                    </label>
-                    <input
-                      type="text"
-                      className="input input-bordered w-full"
-                      value={pax.employeeId}
-                      onChange={(e) =>
-                        handlePassengerIdChange(index, e.target.value)
-                      }
-                      disabled={index === 0}
-                    />
+                  <div
+                    key={index}
+                    className="space-y-4 p-4 border rounded-lg bg-base-200/50"
+                  >
+                    <div className="form-control w-full">
+                      <label className="label">
+                        <span className="label-text font-medium">
+                          Passenger {index + 1} Employee ID
+                        </span>
+                      </label>
+                      <input
+                        type="text"
+                        className="input input-bordered w-full"
+                        value={pax.employeeId}
+                        onChange={(e) =>
+                          handlePassengerIdChange(index, e.target.value)
+                        }
+                        disabled={index === 0}
+                      />
+                    </div>
+                    <div className="form-control w-full">
+                      <label className="label">
+                        <span className="label-text font-medium">
+                          ID Proof / Documents
+                        </span>
+                      </label>
+                      <input
+                        type="file"
+                        multiple
+                        className="file-input file-input-bordered w-full"
+                        onChange={(e) =>
+                          handlePassengerFileChange(index, e.target.files)
+                        }
+                      />
+                    </div>
                   </div>
                 ))}
                 <div className="flex justify-end mt-6">
@@ -370,13 +394,15 @@ const CreateRequest = () => {
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <h3 className="font-semibold text-lg">Flight Details</h3>
-                  {formData.journeyType === "multi-city" && (
+                  {formData.journeyType !== "oneway" && (
                     <button
                       type="button"
                       className="btn btn-sm btn-outline"
                       onClick={addFlightSegment}
                     >
-                      Add Segment
+                      {formData.journeyType === "multi-city"
+                        ? "Add Segment"
+                        : "Add Flight"}
                     </button>
                   )}
                 </div>
@@ -591,7 +617,7 @@ const CreateRequest = () => {
                             <input
                               type="text"
                               className="input input-bordered w-full"
-                              placeholder="Enter country name"
+                              placeholder="Enter country name- eg.Dubai"
                               disabled={!flight.visaRequired}
                               value={flight.visaCountry || ""}
                               onChange={(e) =>
@@ -625,9 +651,7 @@ const CreateRequest = () => {
                 {/* Hotel Details */}
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">
-                    <h3 className="font-semibold text-lg">
-                      Hotel Details (Optional)
-                    </h3>
+                    <h3 className="font-semibold text-lg">Hotel Details</h3>
                     <button
                       type="button"
                       className="btn btn-sm btn-outline"
@@ -642,25 +666,48 @@ const CreateRequest = () => {
                       key={index}
                       className="space-y-4 border-b pb-6 last:border-b-0 last:pb-0 relative"
                     >
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="form-control w-full">
                           <label className="label block mb-2">
-                            <span className="label-text font-medium">City</span>
+                            <span className="label-text font-medium">
+                              Hotel Name
+                            </span>
                           </label>
                           <input
                             type="text"
                             className="input input-bordered w-full"
-                            value={hotel.city}
+                            placeholder="e.g., Taj Palace"
+                            value={hotel.hotelName}
                             onChange={(e) =>
                               handleHotelDetailChange(
                                 index,
-                                "city",
+                                "hotelName",
                                 e.target.value
                               )
                             }
                           />
                         </div>
-
+                        <div className="form-control w-full">
+                          <label className="label block mb-2">
+                            <span className="label-text font-medium">
+                              Hotel Location
+                            </span>
+                          </label>
+                          <input
+                            type="text"
+                            className="input input-bordered w-full"
+                            value={hotel.location}
+                            onChange={(e) =>
+                              handleHotelDetailChange(
+                                index,
+                                "location",
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="form-control w-full">
                           <label className="label block mb-2">
                             <span className="label-text font-medium">
@@ -706,23 +753,19 @@ const CreateRequest = () => {
                               Number of Guests
                             </span>
                           </label>
-                          <select
-                            className="select select-bordered w-full"
+                          <input
+                            type="number"
+                            className="input input-bordered w-full"
                             value={hotel.guests}
+                            min="1"
                             onChange={(e) =>
                               handleHotelDetailChange(
                                 index,
                                 "guests",
-                                parseInt(e.target.value, 10)
+                                Math.max(1, parseInt(e.target.value, 10) || 1)
                               )
                             }
-                          >
-                            {guestOptions.map((num) => (
-                              <option key={num} value={num}>
-                                {num}
-                              </option>
-                            ))}
-                          </select>
+                          />
                         </div>
                       </div>
                       <div className="form-control w-full">
@@ -761,9 +804,7 @@ const CreateRequest = () => {
                 {/* Cab Details */}
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">
-                    <h3 className="font-semibold text-lg">
-                      Cab Details (Optional)
-                    </h3>
+                    <h3 className="font-semibold text-lg">Cab Details</h3>
                     <button
                       type="button"
                       className="btn btn-sm btn-outline"
@@ -860,6 +901,25 @@ const CreateRequest = () => {
                         </div>
                       </div>
 
+                      <div className="form-control w-full">
+                        <label className="label block mb-2">
+                          <span className="label-text font-medium">
+                            Cab Remarks (Optional)
+                          </span>
+                        </label>
+                        <textarea
+                          className="textarea textarea-bordered w-full"
+                          placeholder="e.g., specific car type, need child seat"
+                          value={cab.remarks}
+                          onChange={(e) =>
+                            handleCabDetailChange(
+                              index,
+                              "remarks",
+                              e.target.value
+                            )
+                          }
+                        ></textarea>
+                      </div>
                       <button
                         type="button"
                         className="btn btn-xs btn-error btn-circle absolute top-0 right-0"
@@ -909,23 +969,6 @@ const CreateRequest = () => {
                       setFormData((p) => ({ ...p, remarks: e.target.value }))
                     }
                   ></textarea>
-                </div>
-
-                <div className="form-control w-full">
-                  <label className="label block mb-2">
-                    <span className="label-text font-medium">
-                      Upload Documents (Optional)
-                    </span>
-                  </label>
-                  <input
-                    type="file"
-                    multiple
-                    className="file-input file-input-bordered w-full"
-                    onChange={handleFileChange}
-                  />
-                  <div className="text-xs text-base-content/60 mt-2">
-                    You can upload up to 3 files (PDF, JPG, PNG).
-                  </div>
                 </div>
 
                 <div className="flex justify-between mt-6">

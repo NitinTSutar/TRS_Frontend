@@ -28,7 +28,6 @@ const RequestTable = ({ requests, onDetailsClick }) => {
           <thead>
             <tr>
               <th>Requester</th>
-              <th>Travel Date</th>
               <th>Status</th>
               <th>Submitted</th>
               <th>Actions</th>
@@ -39,12 +38,7 @@ const RequestTable = ({ requests, onDetailsClick }) => {
               <tr key={req._id} className="hover">
                 <td>{req.requesterId?.name || "N/A"}</td>
                 <td>
-                  {req.travelDate
-                    ? format(new Date(req.travelDate), "PPP")
-                    : "N/A"}
-                </td>
-                <td>
-                  <span className="badge badge-ghost badge-sm capitalize">
+                  <span className="capitalize">
                     {req.status}
                   </span>
                 </td>
@@ -61,7 +55,7 @@ const RequestTable = ({ requests, onDetailsClick }) => {
             ))}
             {paginatedRequests.length === 0 && (
               <tr>
-                <td colSpan="5" className="text-center p-4">
+                <td colSpan="4" className="text-center p-4">
                   No requests found in this category.
                 </td>
               </tr>

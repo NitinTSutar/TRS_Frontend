@@ -7,6 +7,7 @@ import {
   approveRequestByManager,
   rejectRequestByManager,
 } from "../../utils/api";
+import RequestDetailsModal from "./RequestDetailsModal";
 
 const StatCard = ({ title, value }) => (
   <div className="stat place-items-center bg-base-100 rounded-lg">
@@ -17,8 +18,7 @@ const StatCard = ({ title, value }) => (
 
 const ManagerDashboard = () => {
   const queryClient = useQueryClient();
-  const [rejectionReason, setRejectionReason] = useState("");
-  const [rejectingRequestId, setRejectingRequestId] = useState(null);
+  const [selectedRequestId, setSelectedRequestId] = useState(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["managerDashboard"],
@@ -30,6 +30,8 @@ const ManagerDashboard = () => {
     onSuccess: () => {
       toast.success("Request approved!");
       queryClient.invalidateQueries({ queryKey: ["managerDashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["managerTravelRequests"] });
+      setSelectedRequestId(null);
     },
     onError: (err) => {
       toast.error(err?.response?.data?.message || "Failed to approve.");
@@ -41,25 +43,21 @@ const ManagerDashboard = () => {
     onSuccess: () => {
       toast.success("Request rejected!");
       queryClient.invalidateQueries({ queryKey: ["managerDashboard"] });
-      setRejectingRequestId(null);
-      setRejectionReason("");
+      queryClient.invalidateQueries({ queryKey: ["managerTravelRequests"] });
+      setSelectedRequestId(null);
     },
     onError: (err) => {
       toast.error(err?.response?.data?.message || "Failed to reject.");
     },
   });
 
-  const handleRejectClick = (requestId) => {
-    setRejectingRequestId(requestId);
-    document.getElementById("rejection_modal").showModal();
-  };
-
-  const handleConfirmReject = () => {
-    if (!rejectionReason) {
-      toast.error("Rejection reason is required.");
-      return;
+  const handleReject = (requestId) => {
+    const reason = prompt("Please provide a reason for rejection:");
+    if (reason) {
+      rejectMutation.mutate({ requestId, rejectionReason: reason.trim() });
+    } else if (reason === "") {
+      toast.error("A reason for rejection is required.");
     }
-    rejectMutation.mutate({ requestId: rejectingRequestId, rejectionReason });
   };
 
   if (isLoading) {
@@ -114,18 +112,10 @@ const ManagerDashboard = () => {
                     <td>{format(new Date(req.createdAt), "PPP")}</td>
                     <td className="flex gap-2">
                       <button
-                        className="btn btn-success btn-sm"
-                        onClick={() => approveMutation.mutate(req._id)}
-                        disabled={approveMutation.isPending}
+                        className="btn btn-primary btn-sm"
+                        onClick={() => setSelectedRequestId(req._id)}
                       >
-                        Approve
-                      </button>
-                      <button
-                        className="btn btn-error btn-sm"
-                        onClick={() => handleRejectClick(req._id)}
-                        disabled={rejectMutation.isPending}
-                      >
-                        Reject
+                        View Details
                       </button>
                     </td>
                   </tr>
@@ -143,7 +133,7 @@ const ManagerDashboard = () => {
         </div>
       </div>
 
-      {/* Rejection Modal */}
+      {/* Rejection Modal
       <dialog id="rejection_modal" className="modal">
         <div className="modal-box">
           <h3 className="font-bold text-lg">Confirm Rejection</h3>
@@ -173,7 +163,17 @@ const ManagerDashboard = () => {
             </button>
           </div>
         </div>
-      </dialog>
+      </dialog> */}
+      {selectedRequestId && (
+        <RequestDetailsModal
+          requestId={selectedRequestId}
+          onClose={() => setSelectedRequestId(null)}
+          onApprove={(id) => approveMutation.mutate(id)}
+          onReject={handleReject}
+          isApproving={approveMutation.isPending}
+          isRejecting={rejectMutation.isPending}
+        />
+      )}
     </div>
   );
 };

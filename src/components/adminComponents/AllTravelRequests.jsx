@@ -4,6 +4,7 @@ import { useLocation, Navigate } from "react-router-dom";
 import { format } from "date-fns";
 import { getAdminTravelRequests } from "../../utils/api";
 import useUserStore from "../../store/userStore";
+import AdminRequestDetailsModal from "./AdminRequestDetailsModal";
 
 const TabButton = ({ isActive, count, onClick, children }) => (
   <button
@@ -92,6 +93,7 @@ const AllTravelRequests = () => {
   const [activeTab, setActiveTab] = useState(
     location.state?.initialTab || "submitted"
   );
+  const [selectedRequestId, setSelectedRequestId] = useState(null);
 
   useEffect(() => {
     // Allows dashboard links to change the tab
@@ -145,18 +147,28 @@ const AllTravelRequests = () => {
   const renderSharedRow = (req) => (
     <tr key={req._id} className="hover">
       <td>{req.requesterId?.name || "N/A"}</td>
-      <td>{req.journeyType}</td>
-      <td>
-        {req.travelDate ? format(new Date(req.travelDate), "PPP") : "N/A"}
+      <td className="capitalize">
+        {req.journeyType?.replace("-", " ") || "N/A"}
       </td>
+      
       <td>{format(new Date(req.createdAt), "PPP")}</td>
+      <td>
+        <button
+          className="btn btn-xs btn-outline"
+          onClick={() => setSelectedRequestId(req._id)}
+        >
+          View Details
+        </button>
+      </td>
     </tr>
   );
 
   const renderBookedRow = (req) => (
     <tr key={req._id} className="hover">
       <td>{req.requesterId?.name || "N/A"}</td>
-      <td>{req.journeyType}</td>
+      <td className="capitalize">
+        {req.journeyType?.replace("-", " ") || "N/A"}
+      </td>
       <td>
         {req.travelDate ? format(new Date(req.travelDate), "PPP") : "N/A"}
       </td>
@@ -165,11 +177,15 @@ const AllTravelRequests = () => {
     </tr>
   );
 
-  const sharedHeaders = ["Requester", "Journey Type", "Travel Date", "Created"];
+  const sharedHeaders = [
+    "Requester",
+    "Journey Type",
+    "Created",
+    "Actions",
+  ];
   const bookedHeaders = [
     "Requester",
     "Journey Type",
-    "Travel Date",
     "Booked By",
     "Booked On",
   ];
@@ -235,6 +251,13 @@ const AllTravelRequests = () => {
             )}
           </div>
         </div>
+
+        {selectedRequestId && (
+          <AdminRequestDetailsModal
+            requestId={selectedRequestId}
+            onClose={() => setSelectedRequestId(null)}
+          />
+        )}
       </div>
     </div>
   );

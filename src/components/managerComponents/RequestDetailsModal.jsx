@@ -10,6 +10,37 @@ const DetailItem = ({ label, value, className = "" }) => (
   </div>
 );
 
+const FileViewer = ({ fileUrl }) => {
+  if (!fileUrl) return null;
+
+  if (fileUrl.endsWith(".pdf")) {
+    const fileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
+    return (
+      <div className="space-y-2">
+        <a
+          href={fileUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="link link-primary"
+        >
+          {fileName}
+        </a>
+        <iframe
+          src={fileUrl}
+          width="100%"
+          height="500px"
+          title="PDF Viewer"
+          className="rounded-lg"
+        ></iframe>
+      </div>
+    );
+  } else {
+    return (
+      <img src={fileUrl} alt="document" className="max-w-[400px] rounded-lg" />
+    );
+  }
+};
+
 const RequestDetailsModal = ({
   requestId,
   onClose,
@@ -27,11 +58,27 @@ const RequestDetailsModal = ({
     queryFn: () => getManagerRequestDetails(requestId),
     enabled: !!requestId,
   });
+  console.log(request);
 
-  // Safe check for selectedOption
-  const selectedOption = request?.options?.find(
-    (opt) => opt._id?.toString() === request?.selectedOptionId?.toString()
-  );
+  // Find selected flight options
+  const selectedFlightOptions = request?.selectedFlightOptionIds
+    ?.map((id) =>
+      request.flightOptions?.find(
+        (opt) => opt._id?.toString() === id.toString()
+      )
+    )
+    .filter(Boolean); // Filter out any undefined if ID not found
+
+  // Find selected hotel options
+  const selectedHotelOptions = request?.selectedHotelOptionIds
+    ?.map((id) =>
+      request.hotelOptions?.find((opt) => opt._id?.toString() === id.toString())
+    )
+    .filter(Boolean); // Filter out any undefined if ID not found
+
+  const totalSelectedCost =
+    (selectedFlightOptions?.reduce((sum, opt) => sum + opt.price, 0) || 0) +
+    (selectedHotelOptions?.reduce((sum, opt) => sum + opt.price, 0) || 0);
 
   const renderContent = () => {
     if (isLoading) {
@@ -63,7 +110,6 @@ const RequestDetailsModal = ({
               label="Employee ID"
               value={request.requesterId?.employeeId}
             />
-            <DetailItem label="Journey Type" value={request.journeyType} />
             <DetailItem
               label="Travel Date"
               value={
@@ -72,11 +118,10 @@ const RequestDetailsModal = ({
                       new Date(request.flightDetails[0].departureDate),
                       "PPP"
                     )
-                  : request.travelDate
-                  ? format(new Date(request.travelDate), "PPP")
                   : "N/A"
               }
             />
+            <DetailItem label="Journey Type" value={request.journeyType} />
             <DetailItem label="Passengers" value={request.noOfPax} />
             <DetailItem
               label="Status"
@@ -89,52 +134,193 @@ const RequestDetailsModal = ({
         {/* Journey Details */}
         {request.flightDetails?.length > 0 && (
           <div className="p-4 bg-base-200 rounded-lg">
-            <h4 className="font-bold text-lg mb-2">Journey Details</h4>
-            <div className="space-y-2">
-              {request.flightDetails.map((flight, index) => (
-                <div key={index} className="text-sm">
-                  <span className="font-semibold">
-                    {flight.fromCity} &rarr; {flight.toCity}
-                  </span>
-                  <span className="text-base-content/70 ml-2">
-                    ({flight.travelCategory})
-                  </span>
-                </div>
-              ))}
+            <h4 className="font-bold text-lg mb-2">
+              Employee's Flight Preferences
+            </h4>
+            <div className="overflow-x-auto">
+              <table className="table table-sm w-full">
+                <thead>
+                  <tr>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Departure</th>
+                    {request.journeyType === "return" && <th>Return</th>}
+                    <th>Time Pref.</th>
+                    <th>Category</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {request.flightDetails.map((flight, index) => (
+                    <tr key={index} className="hover">
+                      <td>{flight.fromCity}</td>
+                      <td>{flight.toCity}</td>
+                      <td>
+                        {flight.departureDate
+                          ? format(new Date(flight.departureDate), "PP")
+                          : "N/A"}
+                      </td>
+                      {request.journeyType === "return" && (
+                        <td>
+                          {flight.returnDate
+                            ? format(new Date(flight.returnDate), "PP")
+                            : "N/A"}
+                        </td>
+                      )}
+                      <td>{flight.preferredTime || "Any"}</td>
+                      <td className="capitalize">{flight.travelCategory}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
 
-        {/* Selected Option Details */}
-        {selectedOption && (
+        {request.hotelDetails?.length > 0 && (
           <div className="p-4 bg-base-200 rounded-lg">
-            <h4 className="font-bold text-lg mb-2">Employee Selected Option</h4>
-            <DetailItem
-              label="Total Cost"
-              value={`${selectedOption.currency} ${
-                selectedOption.totalCost?.toLocaleString() ?? "N/A"
-              }`}
-            />
-            {selectedOption.remarks && (
-              <DetailItem
-                label="Admin Remarks"
-                value={selectedOption.remarks}
-              />
+            <h4 className="font-bold text-lg mb-2">
+              Employee's Hotel Preferences
+            </h4>
+            <div className="overflow-x-auto">
+              <table className="table table-sm w-full">
+                <thead>
+                  <tr>
+                    <th>Location</th>
+                    <th>Check-in</th>
+                    <th>Check-out</th>
+                    <th>Hotel Name (Optional)</th>
+                    <th>Remarks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {request.hotelDetails.map((hotel, index) => (
+                    <tr key={index} className="hover">
+                      <td>{hotel.location}</td>
+                      <td>
+                        {hotel.checkInDate
+                          ? format(new Date(hotel.checkInDate), "PP")
+                          : "N/A"}
+                      </td>
+                      <td>
+                        {hotel.checkOutDate
+                          ? format(new Date(hotel.checkOutDate), "PP")
+                          : "N/A"}
+                      </td>
+                      <td>{hotel.hotelName || "Any"}</td>
+                      <td>{hotel.remarks || "N/A"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {request.cabDetails?.length > 0 && (
+          <div className="p-4 bg-base-200 rounded-lg">
+            <h4 className="font-bold text-lg mb-2">
+              Employee's Cab Preferences
+            </h4>
+            <div className="overflow-x-auto">
+              <table className="table table-sm w-full">
+                <thead>
+                  <tr>
+                    <th>Pickup Location</th>
+                    <th>Dropoff Location</th>
+                    <th>Pickup Date</th>
+                    <th>Pickup Time</th>
+                    <th>Remarks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {request.cabDetails.map((cab, index) => (
+                    <tr key={index} className="hover">
+                      <td>{cab.pickupLocation}</td>
+                      <td>{cab.dropLocation}</td>
+                      <td>
+                        {cab.pickupDate
+                          ? format(new Date(cab.pickupDate), "PP")
+                          : "N/A"}
+                      </td>
+                      <td>{cab.pickupTime || "N/A"}</td>
+                      <td>{cab.remarks || "N/A"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Employee Selected Options */}
+        {(selectedFlightOptions?.length > 0 ||
+          selectedHotelOptions?.length > 0) && (
+          <div className="p-4 bg-base-200 rounded-lg">
+            <h4 className="font-bold text-lg mb-2">
+              Employee's Selected Options
+            </h4>
+            {selectedFlightOptions?.length > 0 && (
+              <div className="mb-2">
+                <h5 className="font-semibold text-sm">Flights:</h5>
+                <ul className="list-disc list-inside text-sm">
+                  {selectedFlightOptions.map((opt) => (
+                    <li key={opt._id}>
+                      {opt.airline} {opt.flightNumber} ({opt.fromCity} &rarr;
+                      {opt.toCity}) - ₹{opt.price?.toLocaleString()}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
+            {selectedHotelOptions?.length > 0 && (
+              <div className="mb-2">
+                <h5 className="font-semibold text-sm">Hotels:</h5>
+                <ul className="list-disc list-inside text-sm">
+                  {selectedHotelOptions.map((opt) => (
+                    <li key={opt._id}>
+                      {opt.name} ({opt.location}) - $ ₹
+                      {opt.price?.toLocaleString()}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <p className="font-bold text-right mt-2">
+              Total Selected Cost: ₹{totalSelectedCost.toLocaleString()}
+            </p>
           </div>
         )}
 
         {/* Passengers */}
-        {request.passengers?.length > 0 && (
+        {request?.passengerDetails?.length > 0 && (
           <div className="p-4 bg-base-200 rounded-lg">
             <h4 className="font-bold text-lg mb-2">Passenger List</h4>
-            <ul className="list-disc list-inside">
-              {request.passengers.map((pax, index) => (
-                <li key={index}>
-                  {pax.employeeId} {pax.remake && `(${pax.remake})`}
-                </li>
-              ))}
-            </ul>
+            <div className="overflow-x-auto">
+              <table className="table table-sm w-full">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Employee ID</th>
+                    <th>Age</th>
+                    <th>Gender</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {request.passengerDetails.map((pax) => (
+                    <tr key={pax.employeeId} className="hover">
+                      <td>{pax.name}</td>
+                      <td>{pax.employeeId}</td>
+                      <td>{pax.age}</td>
+                      <td className="capitalize">{pax.gender}</td>
+                      <td>{pax.phoneNumber}</td>
+                      <td>{pax.email}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
@@ -142,20 +328,16 @@ const RequestDetailsModal = ({
         {request.employeeDocuments?.length > 0 && (
           <div className="p-4 bg-base-200 rounded-lg">
             <h4 className="font-bold text-lg mb-2">Employee Documents</h4>
-            <ul className="list-disc list-inside">
+            <div className="space-y-4">
               {request.employeeDocuments.map((docUrl, index) => (
-                <li key={index}>
-                  <a
-                    href={docUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="link link-primary"
-                  >
-                    View Document {index + 1}
-                  </a>
-                </li>
+                <div key={index} className="p-2 bg-base-100 rounded-lg">
+                  <p className="text-sm font-medium mb-2">
+                    Document {index + 1}
+                  </p>
+                  <FileViewer fileUrl={docUrl} />
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         )}
 

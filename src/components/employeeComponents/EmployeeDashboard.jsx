@@ -1,7 +1,7 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
-import { format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { getEmployeeTravelRequests } from "../../utils/api";
 import useUserStore from "../../store/userStore";
 
@@ -80,23 +80,24 @@ const EmployeeDashboard = () => {
               <thead>
                 <tr>
                   <th>Journey Type</th>
-                  <th>Travel Date</th>
                   <th>Status</th>
+                  <th>Updated On</th>
                 </tr>
               </thead>
               <tbody>
                 {recentRequests.map((req) => (
                   <tr key={req._id} className="hover">
                     <td>{req.journeyType}</td>
+
                     <td>
-                      {req.travelDate
-                        ? format(new Date(req.travelDate), "PPP")
-                        : "N/A"}
-                    </td>
-                    <td>
-                      <span className="badge badge-ghost badge-sm capitalize">
+                      <span className=" capitalize">
                         {req.status}
                       </span>
+                    </td>
+                    <td>
+                      {formatDistanceToNow(new Date(req.updatedAt), {
+                        addSuffix: true,
+                      })}
                     </td>
                   </tr>
                 ))}
@@ -108,5 +109,4 @@ const EmployeeDashboard = () => {
     </div>
   );
 };
-
 export default EmployeeDashboard;
